@@ -1,6 +1,6 @@
 # ReadAfter 📱🚀
 
-**ReadAfter** is a full-stack application (Python/FastAPI Backend and React Native/Expo Mobile App) that allows downloading, processing, and analyzing social media videos using AI (Google Gemini).
+**ReadAfter** is a full-stack application (Python/FastAPI Backend and React Native/Expo Mobile App) that allows downloading, processing, and analyzing social media videos using AI APIs.
 
 ---
 
@@ -8,7 +8,7 @@
 
 - **Mobile:** React Native, Expo, React Navigation, Axios
 - **Backend:** Python, FastAPI, SQLite
-- **Artificial Intelligence:** Google Gemini API for frame analysis
+- **Artificial Intelligence:** Integration with AI APIs for frame analysis and transcription
 
 ---
 
@@ -19,7 +19,7 @@ Follow this guide to run the backend and the mobile app on your machine quickly.
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (Version 18+ recommended)
 - [Python](https://www.python.org/) (Version 3.10+)
-- A [Google AI Studio](https://aistudio.google.com/) account to generate a Gemini API Key.
+- An API Key for your preferred AI service (e.g., Google AI Studio, OpenAI, etc., depending on your backend implementation).
 - The [Expo Go App](https://expo.dev/go) installed on your phone (for physical testing) or a configured Android/iOS Emulator.
 
 ### 1. Clone and Setup
@@ -34,7 +34,7 @@ Configure the environment variables:
 ```bash
 cp .env.example .env
 ```
-👉 Open the generated `.env` file and fill in your `GOOGLE_API_KEY`. Adjust the IP in `EXPO_PUBLIC_API_URL` if you are testing via a physical phone on your local Wi-Fi.
+👉 Open the generated `.env` file and fill in your `GOOGLE_API_KEY` (or the respective key for your AI provider). Adjust the IP in `EXPO_PUBLIC_API_URL` if you are testing via a physical phone on your local Wi-Fi.
 
 ### 2. Running the Backend (API)
 
