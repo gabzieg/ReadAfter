@@ -1,0 +1,34 @@
+# Node / React Native / Expo Dependencies
+node_modules/
+.expo/
+npm-debug.log
+yarn-error.log
+
+# Python Dependencies and Builds
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment Variables and Keys (CRITICAL)
+.env
+.env.local
+.env.*.local
+
+# Local Database (SQLite)
+reels.db
+*.sqlite3
+*.db
+
+# Media and Storage Folders (Keeping empty folders via .gitkeep)
+storage/*
+!storage/.gitkeep
+temp/*
+!temp/.gitkeep
+
+# IDE and OS Files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
