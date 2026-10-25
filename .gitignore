@@ -29,6 +29,7 @@ temp/*
 # IDE and OS Files
 .vscode/
 .idea/
+.claude/
 *.swp
 .DS_Store
 Thumbs.db

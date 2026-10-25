@@ -14,8 +14,8 @@ async def get_reels_async(limit: int, offset: int, q: str, liked: bool, archived
             query = "SELECT * FROM reels WHERE 1=1"
             params = []
             if q:
-                query += " AND (title LIKE ? OR summary LIKE ? OR tags LIKE ?)"
-                params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+                query += " AND (title LIKE ? OR summary LIKE ? OR tags LIKE ? OR full_transcript LIKE ?)"
+                params.extend([f"%{q}%"] * 4)
             if liked:
                 query += " AND is_liked = 1"
             if archived:

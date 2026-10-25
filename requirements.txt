@@ -6,3 +6,16 @@ python-multipart>=0.0.9
 aiofiles>=23.2.1
 python-dotenv>=1.0.1
 imageio-ffmpeg>=0.4.9
+
+# Local transcription and OCR — media never leaves the machine
+faster-whisper>=1.2.1
+easyocr>=1.7.2
+# EasyOCR needs PyTorch. The CPU build is enough for 4 frames per reel and
+# keeps the GPU's VRAM free for Whisper. For GPU OCR, install a CUDA torch
+# build and set OCR_GPU=1.
+torch>=2.2.0
+
+# Optional: enables GPU for faster-whisper without a system-wide CUDA toolkit.
+# Skip these to run on CPU (set WHISPER_MODEL to "small" for reasonable speed).
+nvidia-cudnn-cu12>=9.0.0
+nvidia-cublas-cu12>=12.0.0

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, Image,
-  StyleSheet, TouchableOpacity, Platform,
+  StyleSheet, TouchableOpacity, Platform, Share, Linking,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, typography } from '../services/theme';
-import { assignReelToFolder } from '../services/api'; 
+import { assignReelToFolder, getTranscriptUrl } from '../services/api';
 import { loadFolders } from '../services/folderStore';
 
 function Section({ title, children }) {
@@ -22,6 +23,8 @@ export default function DetailScreen({ route }) {
   const [reel, setReel] = useState(initialReel);
   const [folders, setFolders] = useState([]);
   const [isFolderModalVisible, setIsFolderModalVisible] = useState(false);
+  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  const [copyLabel, setCopyLabel] = useState('Copiar');
 
   React.useEffect(() => {
     loadFolders().then(setFolders);
@@ -37,6 +40,24 @@ export default function DetailScreen({ route }) {
     }
   };
 
+  const handleCopyTranscript = async () => {
+    await Clipboard.setStringAsync(reel.full_transcript);
+    setCopyLabel('Copiado!');
+    setTimeout(() => setCopyLabel('Copiar'), 2000);
+  };
+
+  const handleShareTranscript = async () => {
+    try {
+      await Share.share({ message: reel.full_transcript, title: reel.title || 'Conteúdo do Reel' });
+    } catch (e) {
+      console.warn('Erro ao compartilhar', e);
+    }
+  };
+
+  const handleDownloadTranscript = () => {
+    Linking.openURL(getTranscriptUrl(reel.id)).catch(e => console.warn('Erro ao abrir .txt', e));
+  };
+
   const renderIllustratedArticle = (text, visualJson) => {
     if (!text) return null;
     let frames = [];
@@ -44,26 +65,34 @@ export default function DetailScreen({ route }) {
       frames = JSON.parse(visualJson || '[]');
     } catch (e) {}
 
-    const parts = text.split(/(\[IMAGEM_\d\])/g);
+    const parts = text.split(/(\[IMAGEM_\d+\])/g);
 
-    return parts.map((part, index) => {
-      const match = part.match(/\[IMAGEM_(\d)\]/);
+    return parts.flatMap((part, index) => {
+      const match = part.match(/\[IMAGEM_(\d+)\]/);
       if (match) {
         const imgIndex = parseInt(match[1], 10) - 1;
         const imgUrl = frames[imgIndex];
         if (imgUrl) {
-          return (
-            <Image 
-              key={`img-${index}`} 
-              source={{ uri: imgUrl }} 
-              style={styles.articleImage} 
-              resizeMode="cover" 
+          return [(
+            <Image
+              key={`img-${index}`}
+              source={{ uri: imgUrl }}
+              style={styles.articleImage}
+              resizeMode="cover"
             />
-          );
+          )];
         }
-        return null;
+        return [];
       }
-      return <Text key={`txt-${index}`} style={styles.articleText}>{part}</Text>;
+
+      // Cada parágrafo vira seu próprio bloco, sem quebras sobrando das tags.
+      return part
+        .split(/\n{2,}/)
+        .map(p => p.trim())
+        .filter(Boolean)
+        .map((paragraph, pIndex) => (
+          <Text key={`txt-${index}-${pIndex}`} style={styles.articleText}>{paragraph}</Text>
+        ));
     });
   };
 
@@ -114,6 +143,44 @@ export default function DetailScreen({ route }) {
           </Section>
         )}
 
+        {/* Transcrição Integral (conteúdo completo do Reel) */}
+        {reel.full_transcript && (
+          <Section title="Conteúdo Completo">
+            <TouchableOpacity
+              style={styles.transcriptToggle}
+              onPress={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+            >
+              <Text style={styles.transcriptToggleText}>
+                {isTranscriptExpanded ? 'Ocultar transcrição' : 'Ver transcrição completa'}
+              </Text>
+              <Ionicons
+                name={isTranscriptExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.textTertiary}
+              />
+            </TouchableOpacity>
+
+            {isTranscriptExpanded && (
+              <Text style={styles.transcriptText}>{reel.full_transcript}</Text>
+            )}
+
+            <View style={styles.transcriptActions}>
+              <TouchableOpacity style={styles.transcriptBtn} onPress={handleCopyTranscript}>
+                <Ionicons name="copy-outline" size={16} color={colors.text} />
+                <Text style={styles.transcriptBtnText}>{copyLabel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.transcriptBtn} onPress={handleShareTranscript}>
+                <Ionicons name="share-outline" size={16} color={colors.text} />
+                <Text style={styles.transcriptBtnText}>Compartilhar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.transcriptBtn} onPress={handleDownloadTranscript}>
+                <Ionicons name="download-outline" size={16} color={colors.text} />
+                <Text style={styles.transcriptBtnText}>Baixar .txt</Text>
+              </TouchableOpacity>
+            </View>
+          </Section>
+        )}
+
         {/* Passo a Passo / Checklist */}
         {reel.action_items && reel.action_items.length > 0 && (
           <Section title="Ações e Dicas">
@@ -129,12 +196,26 @@ export default function DetailScreen({ route }) {
         {/* Links para Aprofundamento */}
         {reel.links && reel.links.length > 0 && (
           <Section title="Explorar">
-            {reel.links.map((link, i) => (
-              <TouchableOpacity key={i} style={styles.linkRow} onPress={() => {}}>
-                <Text style={styles.linkText} numberOfLines={1}>{link}</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.textTertiary} />
-              </TouchableOpacity>
-            ))}
+            {reel.links.map((link, i) => {
+              // Formato novo: { title, url }. Reels antigos guardam só a string da URL.
+              const url = typeof link === 'string' ? link : link.url;
+              const title = typeof link === 'string' ? link : (link.title || link.url);
+              if (!url) return null;
+
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.linkRow}
+                  onPress={() => Linking.openURL(url).catch(e => console.warn('Erro ao abrir link', e))}
+                >
+                  <View style={styles.linkTextWrap}>
+                    <Text style={styles.linkText} numberOfLines={1}>{title}</Text>
+                    <Text style={styles.linkUrl} numberOfLines={1}>{url}</Text>
+                  </View>
+                  <Ionicons name="open-outline" size={14} color={colors.textTertiary} />
+                </TouchableOpacity>
+              );
+            })}
           </Section>
         )}
 
@@ -264,6 +345,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   
+  transcriptToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  transcriptToggleText: {
+    ...typography.label,
+    color: colors.textSecondary,
+  },
+  transcriptText: {
+    ...typography.body,
+    lineHeight: 26,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  transcriptActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  transcriptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+  },
+  transcriptBtnText: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: '400',
+  },
+
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,12 +393,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  linkTextWrap: {
+    flex: 1,
+    marginRight: 16,
+  },
   linkText: {
     fontSize: 14,
     color: colors.text,
     fontWeight: '400',
-    flex: 1,
-    marginRight: 16,
+  },
+  linkUrl: {
+    ...typography.small,
+    marginTop: 2,
   },
   
   savedAt: { 

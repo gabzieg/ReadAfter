@@ -2,10 +2,18 @@ import React, { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
+import {
+  useFonts,
+  Lora_400Regular, Lora_500Medium, Lora_600SemiBold, Lora_700Bold,
+} from '@expo-google-fonts/lora';
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   const navigationRef = useRef(null);
+
+  const [fontsLoaded] = useFonts({
+    Lora_400Regular, Lora_500Medium, Lora_600SemiBold, Lora_700Bold,
+  });
 
   useEffect(() => {
     // Intercepta links do Instagram compartilhados para o app
@@ -41,6 +49,8 @@ export default function App() {
       );
     }
   }
+
+  if (!fontsLoaded) return null;
 
   return (
     <>

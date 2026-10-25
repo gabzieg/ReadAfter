@@ -1,6 +1,10 @@
+import re
 import uuid
 from typing import Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi.responses import FileResponse
+from app.core.config import STORAGE_PATH
+from app.services.export_ops import TRANSCRIPT_FILENAME
 from app.models.schemas import SaveReelRequest, ReelUpdateSchema
 from app.core.state import jobs
 from app.core.security import verify_token
@@ -62,6 +66,24 @@ async def job_status(job_id: str):
             job["reel"] = full_reel
                 
     return job
+
+@router.get("/{reel_id}/transcript")
+async def download_transcript(reel_id: str):
+    """Baixa o .txt com o conteúdo completo (transcrição integral) do Reel."""
+    reel = await get_reel_by_id_async(reel_id)
+    if not reel:
+        raise HTTPException(404, "Reel não encontrado")
+
+    path = STORAGE_PATH / reel_id / TRANSCRIPT_FILENAME
+    if not path.exists():
+        raise HTTPException(404, "Transcrição não disponível para este Reel")
+
+    slug = re.sub(r"[^\w\-]+", "-", f"{reel.get('author', '')}-{reel.get('title', '')}").strip("-")[:60]
+    return FileResponse(
+        path,
+        media_type="text/plain; charset=utf-8",
+        filename=f"{slug or reel_id}.txt",
+    )
 
 @router.delete("/{reel_id}", dependencies=[Depends(verify_token)])
 async def delete_reel(reel_id: str):

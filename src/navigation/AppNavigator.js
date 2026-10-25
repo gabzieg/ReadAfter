@@ -8,13 +8,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 
-import { colors, typography, spacing, radius } from '../services/theme';
+import { colors, typography, spacing, radius, fonts } from '../services/theme';
 
 import HomeScreen from '../screens/HomeScreen';
 import DetailScreen from '../screens/DetailScreen';
 import TrashScreen from '../screens/TrashScreen';
+import { SettingsScreen, AppearanceScreen } from '../screens/SettingsScreen';
 import { loadFolders, saveFolders, loadDeletedFolders, saveDeletedFolders } from '../services/folderStore';
 
 const Stack = createNativeStackNavigator();
@@ -29,10 +29,7 @@ function CustomDrawerContent(props) {
   // States para criação de pasta
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-
-  const [fontsLoaded] = useFonts({
-    Alkaline: require('../../assets/font/alkaline-font-family/AlkalineTest-Medium-BF676e1b6c9ed61.otf'),
-  });
+  const [addMenuVisible, setAddMenuVisible] = useState(false);
 
   // Carregar dados no mount
   useEffect(() => {
@@ -162,20 +159,15 @@ function CustomDrawerContent(props) {
   );
 
   return (
-    <DrawerContentScrollView {...props} style={styles.drawerContainer}>
-      <View style={styles.drawerHeader}>
-        {fontsLoaded ? (
-          <Text style={[styles.drawerTitle, { fontFamily: 'Alkaline' }]}>ReadAfter</Text>
-        ) : (
-          <Text style={styles.drawerTitle}>ReadAfter</Text>
-        )}
-      </View>
-
+    <View style={styles.drawerContainer}>
+    <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: spacing.md }}>
       <View style={styles.section}>
         <DrawerItem icon="home-outline" label="Home" active={true} onPress={() => props.navigation.navigate('Feed', { filter: 'home' })} />
         <DrawerItem icon="heart-outline" label="Liked" onPress={() => props.navigation.navigate('Feed', { filter: 'liked' })} />
-        <DrawerItem icon="pricetags-outline" label="Tags" onPress={() => props.navigation.navigate('Feed', { filter: 'tags' })} />
-        {/* Archive was moved out of the main section for minimalism */}
+        <DrawerItem icon="archive-outline" label="Archive" onPress={() => props.navigation.navigate('Feed', { filter: 'archived' })} />
+        <DrawerItem icon="play-outline" label="Videos" onPress={() => props.navigation.navigate('Feed', { filter: 'home' })} />
+        <DrawerItem icon="chatbox-outline" label="Notes" onPress={() => Alert.alert('Notes', 'Em breve.')} />
+        <DrawerItem icon="pricetag-outline" label="Tags" onPress={() => props.navigation.navigate('Feed', { filter: 'tags' })} />
       </View>
 
       <View style={styles.separator} />
@@ -210,10 +202,6 @@ function CustomDrawerContent(props) {
       <View style={styles.separator} />
 
       <View style={styles.section}>
-        <TouchableOpacity style={styles.trashHeader} onPress={() => props.navigation.navigate('Feed', { filter: 'archived' })}>
-          <Ionicons name="archive-outline" size={16} color={colors.textTertiary} />
-          <Text style={[styles.sectionTitle, { marginBottom: 0, marginLeft: 8 }]}>ARQUIVADOS</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.trashHeader} onPress={() => props.navigation.navigate('Trash')}>
           <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
           <Text style={[styles.sectionTitle, { marginBottom: 0, marginLeft: 8 }]}>LIXEIRA</Text>
@@ -289,6 +277,34 @@ function CustomDrawerContent(props) {
       </Modal>
 
     </DrawerContentScrollView>
+
+    {/* Barra inferior: + (Add) e engrenagem (Settings) */}
+    <View style={styles.bottomBar}>
+      <TouchableOpacity style={styles.bottomBtn} onPress={() => setAddMenuVisible(true)}>
+        <Ionicons name="add" size={26} color={colors.accent} />
+      </TouchableOpacity>
+      <View style={styles.bottomDivider} />
+      <TouchableOpacity style={styles.bottomBtn} onPress={() => props.navigation.navigate('Settings')}>
+        <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
+      </TouchableOpacity>
+    </View>
+
+    <Modal visible={addMenuVisible} transparent animationType="fade" onRequestClose={() => setAddMenuVisible(false)}>
+      <Pressable style={styles.addOverlay} onPress={() => setAddMenuVisible(false)}>
+        <View style={styles.addMenu}>
+          <TouchableOpacity style={styles.addRow} onPress={() => { setAddMenuVisible(false); props.navigation.navigate('Feed', { filter: 'home' }); }}>
+            <Text style={styles.addRowText}>Add Link</Text>
+            <Ionicons name="link-outline" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.addRowBorder} />
+          <TouchableOpacity style={styles.addRow} onPress={() => { setAddMenuVisible(false); setNewFolderModalVisible(true); }}>
+            <Text style={styles.addRowText}>Add Folder</Text>
+            <Ionicons name="folder-outline" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+      </Pressable>
+    </Modal>
+    </View>
   );
 }
 
@@ -299,12 +315,13 @@ function DrawerNavigator() {
       screenOptions={{
         headerShown: true,
         headerTintColor: colors.text,
-        headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-        headerTitleStyle: { ...typography.h2, fontSize: 16 },
-        drawerStyle: { width: 280, backgroundColor: colors.background },
+        headerTitleAlign: 'center',
+        headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+        headerTitleStyle: { fontFamily: fonts.serifBold, fontSize: 22, color: colors.text },
+        drawerStyle: { width: 300, backgroundColor: colors.background },
       }}
     >
-      <Drawer.Screen name="Feed" component={HomeScreen} options={{ title: 'Todos os Reels' }} />
+      <Drawer.Screen name="Feed" component={HomeScreen} options={{ title: 'ReadAfter' }} />
     </Drawer.Navigator>
   );
 }
@@ -333,6 +350,24 @@ export default React.forwardRef(function AppNavigator(props, ref) {
           name="Trash"
           component={TrashScreen}
           options={{ title: 'Lixeira', headerBackTitleVisible: false }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            title: 'Settings', headerTitleAlign: 'center', headerTintColor: colors.accent,
+            headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+            headerTitleStyle: { fontSize: 17, fontWeight: '600', color: colors.text },
+          }}
+        />
+        <Stack.Screen
+          name="Appearance"
+          component={AppearanceScreen}
+          options={{
+            title: 'Appearance', headerTitleAlign: 'center', headerTintColor: colors.accent,
+            headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+            headerTitleStyle: { fontSize: 17, fontWeight: '600', color: colors.text },
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -445,6 +480,24 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 16,
   },
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E3E3E6',
+    height: 64,
+  },
+  bottomBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%' },
+  bottomDivider: { width: StyleSheet.hairlineWidth, height: '60%', backgroundColor: '#E3E3E6' },
+  addOverlay: { flex: 1, justifyContent: 'flex-end' },
+  addMenu: {
+    position: 'absolute', left: 16, bottom: 72, width: 260,
+    backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 8,
+  },
+  addRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, height: 52 },
+  addRowBorder: { height: StyleSheet.hairlineWidth, backgroundColor: '#E3E3E6' },
+  addRowText: { fontSize: 17, color: '#1C1C1E' },
 
   popoverOverlay: {
     flex: 1,

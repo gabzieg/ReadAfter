@@ -34,7 +34,11 @@ def init_db():
                 quote TEXT,
                 is_liked INTEGER DEFAULT 0,
                 is_archived INTEGER DEFAULT 0,
-                folder_id TEXT DEFAULT NULL
+                folder_id TEXT DEFAULT NULL,
+                full_transcript TEXT,
+                transcript_file TEXT,
+                transcript_segments TEXT,
+                detected_language TEXT
             )
         """)
         
@@ -55,6 +59,14 @@ def init_db():
             conn.execute("ALTER TABLE reels ADD COLUMN folder_id TEXT DEFAULT NULL")
         except sqlite3.OperationalError:
             pass
+
+        # Transcrição integral em .txt (independente do resumo/artigo)
+        for column in ("full_transcript TEXT", "transcript_file TEXT",
+                       "transcript_segments TEXT", "detected_language TEXT"):
+            try:
+                conn.execute(f"ALTER TABLE reels ADD COLUMN {column}")
+            except sqlite3.OperationalError:
+                pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS folders (

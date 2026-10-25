@@ -34,6 +34,11 @@ export async function deleteReel(reelId) {
   await api.delete(`/reels/${reelId}`);
 }
 
+// URL do .txt com o conteúdo completo (transcrição integral) do Reel
+export function getTranscriptUrl(reelId) {
+  return `${BASE_URL}/reels/${reelId}/transcript`;
+}
+
 // Polling com suporte a cancelamento (AbortSignal) e timeout
 export async function waitForJob(jobId, onStep, signal) {
   let attempts = 0;
